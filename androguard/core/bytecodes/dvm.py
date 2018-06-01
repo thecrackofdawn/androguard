@@ -97,6 +97,10 @@ class InvalidInstruction(Error):
     pass
 
 
+class InvalidDex(Error):
+    pass
+
+
 def read_null_terminated_string(f):
     """
     Read a null terminated string from a file-like object.
@@ -7529,6 +7533,10 @@ class DalvikVMFormat(bytecode._Bytecode):
             self.api_version = using_api
         else:
             self.api_version = CONF["DEFAULT_API"]
+
+        #WARN: in python3.x, b'dex' is not equal to 'dex'
+        if not buff[:8].decode("ascii") in (DEX_FILE_MAGIC_35, DEX_FILE_MAGIC_36, DEX_FILE_MAGIC_37):
+            raise InvalidDex("The magic %s is invalid or not supported yet"%buff[:8])
 
         # TODO: can using_api be added to config parameter?
         super(DalvikVMFormat, self).__init__(buff)

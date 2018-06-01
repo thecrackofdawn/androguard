@@ -5,7 +5,7 @@ import hashlib
 import re
 import os
 from androguard.core.bytecodes.apk import APK
-from androguard.core.bytecodes.dvm import DalvikVMFormat
+from androguard.core.bytecodes.dvm import DalvikVMFormat, InvalidDex
 from androguard.core.analysis.analysis import Analysis
 
 import logging
@@ -68,7 +68,11 @@ def AnalyzeAPK(_file, session=None, raw=False):
         d = []
         dx = Analysis()
         for dex in a.get_all_dex():
-            df = DalvikVMFormat(dex, using_api=a.get_target_sdk_version())
+            try:
+                df = DalvikVMFormat(dex, using_api=a.get_target_sdk_version())
+            except InvalidDex as why:
+                log.warn("Invalid dex: %s"%why.__str__())
+                continue
             dx.add(df)
             d.append(df)
             df.set_decompiler(decompiler.DecompilerDAD(d, dx))
@@ -236,5 +240,3 @@ def clean_file_name(filename, unique=True, replace="_", force_nt=False):
             counter += 1
 
     return os.path.join(path, fname)
-
-

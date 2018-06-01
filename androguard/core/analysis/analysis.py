@@ -286,6 +286,7 @@ class MethodAnalysis:
             self._create_basic_block()
 
     def _create_basic_block(self):
+        log.debug("Creating basic blocks in %s" % self.method)
         current_basic = DVMBasicBlock(0, self.__vm, self.method, self.basic_blocks)
         self.basic_blocks.push(current_basic)
 
@@ -312,7 +313,6 @@ class MethodAnalysis:
             for handler in i[2:]:
                 l.append(handler[1])
 
-        log.debug("Creating basic blocks in %s" % self.method)
         idx = 0
         for i in bc.get_instructions():
             # index is a destination

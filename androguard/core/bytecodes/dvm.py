@@ -1139,7 +1139,7 @@ class TypeList(object):
     def get_pad(self):
         """
         Return the alignment string
-        
+
         :rtype: string
         """
         return self.pad
@@ -6387,16 +6387,20 @@ class LinearSweepAlgorithm(object):
                     try:
                         obj = get_instruction_payload(op_value, insn[idx:])
                         classic_instruction = False
-                    except struct.error:
-                        log.warning("error while decoding instruction ...")
+                    except struct.error as why:
+                        raise InvalidInstruction("Invalid Instruction for 0x%x: %s" % (
+                            op_value,
+                            why.__str__()))
+
 
                 elif op_value in DALVIK_OPCODES_EXTENDED_WIDTH:
                     try:
                         obj = get_extented_instruction(cm, op_value, insn[idx:])
                         classic_instruction = False
                     except struct.error as why:
-                        log.warning("error while decoding instruction ..." +
-                                why.__str__())
+                        raise InvalidInstruction("Invalid Instruction for 0x%x: %s" % (
+                            op_value,
+                            why.__str__()))
 
                 # optimized instructions ?
                 elif self.odex and (op_value in DALVIK_OPCODES_OPTIMIZED):
@@ -6406,10 +6410,22 @@ class LinearSweepAlgorithm(object):
             # classical instructions
             if classic_instruction:
                 op_value = insn[idx]
-                obj = get_instruction(cm, op_value, insn[idx:], self.odex)
+                try:
+                    obj = get_instruction(cm, op_value, insn[idx:], self.odex)
+                except struct.error as why:
+                    raise InvalidInstruction("Invalid Instruction for 0x%x: %s" % (
+                        op_value,
+                        why.__str__()))
 
             # emit instruction
-            yield obj
+            try:
+                obj.get_name()
+            except KeyError as why:
+                raise InvalidInstruction("Invalid Instruction for 0x%x: %s" % (
+                    op_value,
+                    why.__str__()))
+            else:
+                yield obj
             idx = idx + obj.get_length()
 
 
@@ -6488,9 +6504,14 @@ class DCode(object):
         # it is possible to a cache for instructions (avoid a new disasm)
         if self.cached_instructions is None:
             lsa = LinearSweepAlgorithm()
-            ins = lsa.get_instructions(self.CM, self.size, self.insn,
-                                          self.idx)
-            self.cached_instructions = list(ins)
+            try:
+                ins = lsa.get_instructions(self.CM, self.size, self.insn,
+                                              self.idx)
+                self.cached_instructions = list(ins)
+            except InvalidInstruction as why:
+                log.warning("error while decoding instruction ..." +
+                        why.__str__())
+                self.cached_instructions = []
 
         for i in self.cached_instructions:
             yield i

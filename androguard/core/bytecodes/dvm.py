@@ -349,6 +349,8 @@ def determineNext(i, end, m):
         data = code.get_ins_off(off + end)
 
         if data is not None:
+            if not hasattr(data, "get_targets"):
+                raise InvalidInstruction("data-bearing pseudo-instruction is invalid")
             for target in data.get_targets():
                 x.append(target * 2 + end)
 

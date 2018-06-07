@@ -299,7 +299,13 @@ class MethodAnalysis:
         for i in bc.get_instructions():
             for j in BasicOPCODES:
                 if j.match(i.get_name()) is not None:
-                    v = dvm.determineNext(i, idx, self.method)
+                    try:
+                        v = dvm.determineNext(i, idx, self.method)
+                    except dvm.InvalidInstruction as why:
+                        log.warn(why.__str__())
+                        self.basic_blocks = BasicBlocks(self.__vm)
+                        bc.cached_instructions = []
+                        return
                     h[idx] = v
                     l.extend(v)
                     break

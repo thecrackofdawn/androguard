@@ -599,6 +599,8 @@ class APK(object):
         :param attribute: a string which specify the attribute
         """
         for i in self.xml:
+            if self.xml[i] is None:
+                continue
             for item in self.xml[i].findall('.//' + tag_name):
                 if with_namespace:
                     value = item.get(NS_ANDROID + attribute)
@@ -660,18 +662,20 @@ class APK(object):
                     return value
         return None
 
-    def get_main_activity(self):
+    def get_main_activities(self):
         """
-        Return the name of the main activity
+        Return names of the main activities
 
-        This value is read from the AndroidManifest.xml
+        These values are read from the AndroidManifest.xml
 
-        :rtype: str
+        :rtype: a set of str
         """
         x = set()
         y = set()
 
         for i in self.xml:
+            if self.xml[i] is None:
+                continue
             activities_and_aliases = self.xml[i].findall(".//activity") + \
                                      self.xml[i].findall(".//activity-alias")
 
@@ -679,7 +683,7 @@ class APK(object):
                 # Some applications have more than one MAIN activity.
                 # For example: paid and free content
                 activityEnabled = item.get(NS_ANDROID + "enabled")
-                if activityEnabled is not None and activityEnabled != "" and activityEnabled == "false":
+                if activityEnabled == "false":
                     continue
 
                 for sitem in item.findall(".//action"):
@@ -692,9 +696,19 @@ class APK(object):
                     if val == "android.intent.category.LAUNCHER":
                         y.add(item.get(NS_ANDROID + "name"))
 
-        z = x.intersection(y)
-        if len(z) > 0:
-            return self._format_value(z.pop())
+        return x.intersection(y)
+
+    def get_main_activity(self):
+        """
+        Return the name of the main activity
+
+        This value is read from the AndroidManifest.xml
+
+        :rtype: str
+        """
+        activities = self.get_main_activities()
+        if len(activities) > 0:
+            return self._format_value(activities.pop())
         return None
 
     def get_activities(self):
